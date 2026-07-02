@@ -112,6 +112,18 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:#1a202c;fo
 .podium-row{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid rgba(217,119,6,.2)}
 .podium-name{font-weight:900;font-size:12px;padding:2px 8px;border-radius:6px;background:#fef3c7;color:#78350f}
 .podium-rank-lbl{font-weight:900;font-size:11px;min-width:78px;flex-shrink:0;white-space:nowrap}
+/* ===== スマホ（狭い画面）向け調整 =====
+   スコア欄を1行に保つため、チーム名欄を優先的に縮める */
+@media (max-width: 480px){
+  .tc{max-width:74px;font-size:10px}
+  .mtbl td{padding:6px 2px}
+  .mtbl .mn{font-size:9px;padding:6px 1px}
+  .set-chip{min-width:30px;padding:2px 2px}
+  .set-chip .sc-score{font-size:10px}
+  .set-row{gap:2px}
+  .live-status{font-size:9px}
+  .score-big{font-size:13px;padding:0 3px}
+}
 </style>
 </head>
 <body>
@@ -123,6 +135,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:#1a202c;fo
     <button class="hbtn" onclick="cloudLoad()">🔄 最新の情報に更新</button>
     <button class="hbtn" id="auto-refresh-btn" onclick="toggleAutoRefresh()">⏱️ 自動更新: ON</button>
     <span class="cloud-status" id="cloud-status">読込中...</span>
+    <span class="cloud-status" style="opacity:.55">v4</span>
   </div>
 </div>
 
