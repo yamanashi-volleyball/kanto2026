@@ -21,6 +21,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:#1a202c;fo
 .hdr-sub{font-size:10px;opacity:.7;margin-top:2px}
 .hdr-actions{margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
 .hbtn{background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:#fff;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+.hbtn.off{background:rgba(0,0,0,.2);border-color:rgba(255,255,255,.25);opacity:.75}
 .hbtn:hover{background:rgba(255,255,255,.25)}
 .cloud-status{font-size:10px;color:rgba(255,255,255,.8)}
 
@@ -120,6 +121,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:#1a202c;fo
   <div class="hdr-sub">本部入力システムと連動してリアルタイムに結果が表示されます</div>
   <div class="hdr-actions">
     <button class="hbtn" onclick="cloudLoad()">🔄 最新の情報に更新</button>
+    <button class="hbtn" id="auto-refresh-btn" onclick="toggleAutoRefresh()">⏱️ 自動更新: ON</button>
     <span class="cloud-status" id="cloud-status">読込中...</span>
   </div>
 </div>
@@ -520,13 +522,48 @@ function renderAll(){
   if(d2el){ d2el.innerHTML=renderDay2ThreeLeagues('female'); }
 }
 
+const AUTO_REFRESH_MS = 60000; // 自動更新の間隔（60秒）
+let autoRefreshTimer = null;
+let autoRefreshOn = true;
+
+function startAutoRefresh(){
+  if(autoRefreshTimer) clearInterval(autoRefreshTimer);
+  autoRefreshTimer = setInterval(()=>cloudLoad(true), AUTO_REFRESH_MS);
+}
+function stopAutoRefresh(){
+  if(autoRefreshTimer){ clearInterval(autoRefreshTimer); autoRefreshTimer=null; }
+}
+function updateAutoRefreshBtn(){
+  const btn = document.getElementById('auto-refresh-btn');
+  if(!btn) return;
+  if(autoRefreshOn){
+    btn.textContent = '⏱️ 自動更新: ON';
+    btn.classList.remove('off');
+  } else {
+    btn.textContent = '⏱️ 自動更新: OFF';
+    btn.classList.add('off');
+  }
+}
+function toggleAutoRefresh(){
+  autoRefreshOn = !autoRefreshOn;
+  try{ localStorage.setItem('yamanashi_viewer_autorefresh', autoRefreshOn ? '1' : '0'); }catch(e){}
+  if(autoRefreshOn){ startAutoRefresh(); showToast('自動更新をONにしました'); }
+  else { stopAutoRefresh(); showToast('自動更新をOFFにしました（手動更新は引き続き使えます）'); }
+  updateAutoRefreshBtn();
+}
+
 window.addEventListener('DOMContentLoaded',()=>{ 
   load(); 
   renderAll(); 
   cloudLoad(); // 起動時に最新のクラウドデータを自動取得
-  
-  // 定期自動更新（30秒おき・通知なしのサイレント更新）
-  setInterval(()=>cloudLoad(true), 30000);
+
+  // 前回の自動更新ON/OFF設定を復元（初めての場合はON）
+  try{
+    const saved = localStorage.getItem('yamanashi_viewer_autorefresh');
+    if(saved === '0') autoRefreshOn = false;
+  }catch(e){}
+  updateAutoRefreshBtn();
+  if(autoRefreshOn) startAutoRefresh();
 });
 </script>
 </body>
