@@ -56,7 +56,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:#1a202c;fo
 .league-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
 .part-card{background:#fff;border-radius:12px;border:2px solid #e8eef5;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05);display:flex;flex-direction:column}
 .part-head{padding:8px 12px;font-weight:900;font-size:12px;color:#fff;display:flex;align-items:center;gap:6px;justify-content:space-between}
-.part-body{padding:10px;flex-grow:1;display:flex;flex-direction:column;justify-content:space-between}
+.part-body{padding:10px;flex-grow:1;display:flex;flex-direction:column;justify-content:space-between;overflow-x:auto}
 .venue-lbl{font-size:9px;opacity:.8;font-weight:500}
 
 /* 試合テーブル */
@@ -64,7 +64,10 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:#1a202c;fo
 .mtbl th{background:#374151;color:#fff;padding:5px 4px;font-size:9px;text-align:center}
 .mtbl td{border:1px solid #e8eef5;padding:6px 4px;text-align:center;vertical-align:middle}
 .mn{background:#f5f7fa;font-weight:900;color:#555;font-size:10px;white-space:nowrap}
-.tc{text-align:left!important;font-weight:700;font-size:11px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tc{text-align:left!important;font-weight:700;font-size:11px;white-space:nowrap;line-height:1.25;padding-left:4px!important;padding-right:4px!important}
+.t-pref{display:block;font-size:9px;font-weight:700;color:#8a97a8;white-space:nowrap}
+.t-name{display:block;font-size:11px;font-weight:900;white-space:nowrap;letter-spacing:-.2px;max-width:116px;overflow:hidden;text-overflow:ellipsis}
+.tc.rside{text-align:right!important}
 .score-disp-box {display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900;font-size:11px;gap:3px;white-space:nowrap}
 .score-set-row {font-size:10px;color:#666;font-weight:normal;}
 .live-status{font-size:10px;font-weight:900;color:var(--orange);display:flex;align-items:center;gap:3px;white-space:nowrap}
@@ -96,7 +99,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:#1a202c;fo
 .rtbl{width:100%;border-collapse:collapse;font-size:10px}
 .rtbl th{background:#374151;color:#fff;padding:4px 3px;font-size:9px;text-align:center}
 .rtbl td{border:1px solid #e8eef5;padding:4px 2px;text-align:center}
-.rn{text-align:left!important;padding-left:5px!important;font-weight:700;font-size:10px}
+.rn{text-align:left!important;padding-left:5px!important;font-weight:700;font-size:10px;white-space:nowrap;line-height:1.25;min-width:106px}
 
 /* 未完了メッセージ */
 .pending-msg {background:#f8fafc; border:1px dashed #cbd5e1; border-radius:6px; color:#64748b; padding:12px; text-align:center; font-weight:700; font-size:11px; margin-top:8px;}
@@ -110,12 +113,22 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:#1a202c;fo
 .podium{background:linear-gradient(135deg,#fffde7,#fff9c4);border:2px solid var(--gold);border-radius:12px;padding:10px 12px;margin-top:10px}
 .podium-title{font-size:12px;font-weight:900;color:#78350f;margin-bottom:6px;display:flex;align-items:center;gap:6px}
 .podium-row{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid rgba(217,119,6,.2)}
-.podium-name{font-weight:900;font-size:12px;padding:2px 8px;border-radius:6px;background:#fef3c7;color:#78350f}
+.podium-name{font-weight:900;font-size:12px;padding:3px 10px;border-radius:6px;background:#fef3c7;color:#78350f;display:inline-block;text-align:center;line-height:1.25;white-space:nowrap}
+.podium-name .t-pref{font-size:9px;color:#a1662f}
+.podium-name .t-name{font-size:12px}
 .podium-rank-lbl{font-weight:900;font-size:11px;min-width:78px;flex-shrink:0;white-space:nowrap}
 /* ===== スマホ（狭い画面）向け調整 =====
    スコア欄を1行に保つため、チーム名欄を優先的に縮める */
 @media (max-width: 480px){
-  .tc{max-width:74px;font-size:10px}
+  .tc{max-width:none;font-size:10px;padding-left:2px!important;padding-right:2px!important}
+  .t-name{font-size:10px;max-width:100px}
+  .rn{min-width:102px;font-size:10px}
+  .rtbl th,.rtbl td{padding:4px 1px}
+  .podium-name .t-name{font-size:11px}
+  .t-pref{font-size:8px}
+  .mtbl th:nth-child(2),.mtbl th:nth-child(4){width:106px!important}
+  .mtbl th:nth-child(1){width:30px!important}
+  .mtbl td[style*='min-width:90px']{min-width:76px!important}
   .mtbl td{padding:6px 2px}
   .mtbl .mn{font-size:9px;padding:6px 1px}
   .set-chip{min-width:30px;padding:2px 2px}
@@ -183,13 +196,13 @@ const TOURNAMENT={
 };
 
 const M3=[[0,1,'①vs②'],[1,2,'②vs③'],[2,0,'③vs①']];
-let DB={ scores:{}, teamNames:{}, t2scores:{}, t2teams:{}, groups:{}, day1Done: false };
+let DB={ scores:{}, teamNames:{}, teamPrefs:{}, t2scores:{}, t2teams:{}, groups:{}, day1Done: false };
 
 function save(){try{localStorage.setItem(STORE,JSON.stringify(DB));}catch(e){}}
 function load(){
   try{
     const d=localStorage.getItem(STORE);
-    if(d){const p=JSON.parse(d);DB=Object.assign({scores:{},teamNames:{},t2scores:{}},p);}
+    if(d){const p=JSON.parse(d);DB=Object.assign({scores:{},teamNames:{},teamPrefs:{},t2scores:{},t2teams:{},groups:{},day1Done:false},p);if(!DB.teamPrefs)DB.teamPrefs={};}
   }catch(e){}
 }
 
@@ -221,7 +234,8 @@ async function cloudLoad(isAuto) {
     catch(e){ throw new Error('データの形式が不正です'); }
 
     if (data && typeof data === 'object') {
-      DB = Object.assign({scores:{},teamNames:{},t2scores:{},t2teams:{},groups:{},day1Done:false}, data);
+      DB = Object.assign({scores:{},teamNames:{},teamPrefs:{},t2scores:{},t2teams:{},groups:{},day1Done:false}, data);
+      if(!DB.teamPrefs)DB.teamPrefs={};
       save();
       renderAll();
       updateDay2TabVisibility();
@@ -276,6 +290,34 @@ function teamName(sec,partId,ti){
   if(DB.teamNames[k]!==undefined && DB.teamNames[k]!=='')return DB.teamNames[k];
   const part=TOURNAMENT[sec].parts.find(p=>p.id===partId);
   return(part&&part.teams[ti])||'チーム'+(ti+1);
+}
+// 都県名（上段）を取得
+function teamPref(sec,partId,ti){
+  const k=sec+'_'+partId+'_'+ti;
+  return (DB.teamPrefs && DB.teamPrefs[k]) ? DB.teamPrefs[k] : '';
+}
+// 都県名＋チーム名を2行で表示するHTML
+function teamCellHTML(sec,partId,ti){
+  const pf=teamPref(sec,partId,ti);
+  const nm=teamName(sec,partId,ti);
+  // 都県名が未入力でも上段を確保し、常に「都県名1行＋チーム名1行」の2行構成にする
+  return `<span class="t-pref">${pf?esc(pf):'&nbsp;'}</span><span class="t-name">${esc(nm)}</span>`;
+}
+// チーム名から都県名を逆引き（2日目リーグ用：チーム名しか渡ってこないため）
+function prefByTeamName(nm){
+  if(!nm) return '';
+  const parts=TOURNAMENT.female.parts;
+  for(const p of parts){
+    for(let ti=0; ti<p.teams.length; ti++){
+      if(teamName('female',p.id,ti)===nm) return teamPref('female',p.id,ti);
+    }
+  }
+  return '';
+}
+// チーム名だけを渡して2行表示するHTML
+function teamCellByName(nm){
+  const pf=prefByTeamName(nm);
+  return `<span class="t-pref">${pf?esc(pf):'&nbsp;'}</span><span class="t-name">${esc(nm||'')}</span>`;
 }
 
 function scoreKey(sec,partId,mi,side,st){return sec+'_'+partId+'_'+mi+'_'+side+'_s'+st;}
@@ -401,9 +443,9 @@ function renderPartCard(sec,partId){
     
     mhtml+=`<tr>
       <td class="mn">${esc(lbl)}</td>
-      <td class="tc ${r.winA?'win-team':''}">${esc(teams[i])}</td>
+      <td class="tc ${r.winA?'win-team':''}">${teamCellHTML(sec,partId,i)}</td>
       <td style="background:#fffef8; min-width:90px;">${makeScoreDisplayHTML(r)}</td>
-      <td class="tc" style="text-align:right!important; padding-right:6px; ${r.winB?'win-team':''}">${esc(teams[j])}</td>
+      <td class="tc rside ${r.winB?'win-team':''}" style="padding-right:6px">${teamCellHTML(sec,partId,j)}</td>
     </tr>`;
   });
 
@@ -414,7 +456,7 @@ function renderPartCard(sec,partId){
     const s_pr=rk.pl[ti]===0?(rk.pw[ti]>0?'MAX':'0.000'):rk.ptRate(ti).toFixed(3);
     rhtml+=`<tr>
       <td style="font-weight:900;background:#f8fafc">${ri+1}</td>
-      <td class="rn">${esc(teams[ti])}</td>
+      <td class="rn">${teamCellHTML(sec,partId,ti)}</td>
       <td>${rk.mw[ti]}勝${rk.ml[ti]}敗</td>
       <td>${s_wr}</td>
       <td>${rk.sw[ti]}/${rk.sl[ti]}<br><span style="color:#666">${s_sr}</span></td>
@@ -438,7 +480,7 @@ function renderPartCard(sec,partId){
     </div>
     <div class="part-body">
       <table class="mtbl">
-        <thead><tr><th style="width:35px">順序</th><th style="width:105px">チーム①</th><th>結果・スコア</th><th style="width:105px">チーム②</th></tr></thead>
+        <thead><tr><th style="width:35px">順序</th><th style="width:124px">チーム①</th><th>結果・スコア</th><th style="width:124px">チーム②</th></tr></thead>
         <tbody>${mhtml}</tbody>
       </table>
       ${rankSectionHTML}
@@ -514,19 +556,19 @@ function renderDay2ThreeLeagues(sec){
       if(r.entered) doneM++;
       mhtml+=`<tr>
         <td class="mn">${labels[idx]}</td>
-        <td class="tc ${r.winA?'win-team':''}">${esc(teams[i])}</td>
+        <td class="tc ${r.winA?'win-team':''}">${teamCellByName(teams[i])}</td>
         <td style="background:#fffef8; min-width:90px;">${makeScoreDisplayHTML(r)}</td>
-        <td class="tc" style="text-align:right!important; padding-right:6px; ${r.winB?'win-team':''}">${esc(teams[j])}</td>
+        <td class="tc rside ${r.winB?'win-team':''}" style="padding-right:6px">${teamCellByName(teams[j])}</td>
       </tr>`;
     });
     if(doneM === 3) totalDay2DoneLeagues++;
 
     let rhtml='';
     rk.ranked.forEach((ti,ri)=>{
-      rhtml+=`<tr><td style="font-weight:900;background:#f8fafc">${ri+1}</td><td class="rn">${esc(teams[ti])}</td><td>${rk.mw[ti]}勝${rk.ml[ti]}敗</td><td>${rk.winRate(ti).toFixed(3)}</td><td>${rk.sw[ti]}/${rk.sl[ti]}<br><span style="color:#666">${rk.sl[ti]===0?'MAX':rk.sr(ti).toFixed(3)}</span></td><td>${rk.pw[ti]}/${rk.pl[ti]}<br><span style="color:#666">${rk.pl[ti]===0?'MAX':rk.ptRate(ti).toFixed(3)}</span></td></tr>`;
+      rhtml+=`<tr><td style="font-weight:900;background:#f8fafc">${ri+1}</td><td class="rn">${teamCellByName(teams[ti])}</td><td>${rk.mw[ti]}勝${rk.ml[ti]}敗</td><td>${rk.winRate(ti).toFixed(3)}</td><td>${rk.sw[ti]}/${rk.sl[ti]}<br><span style="color:#666">${rk.sl[ti]===0?'MAX':rk.sr(ti).toFixed(3)}</span></td><td>${rk.pw[ti]}/${rk.pl[ti]}<br><span style="color:#666">${rk.pl[ti]===0?'MAX':rk.ptRate(ti).toFixed(3)}</span></td></tr>`;
     });
 
-    html+=`<div class="part-card" style="border-top:3px solid ${lg.color}"><div class="part-head" style="background:#34495e"><span>🔥 ${esc(lg.label)}</span></div><div class="part-body"><table class="mtbl"><thead><tr><th style="width:35px">順序</th><th style="width:105px">チーム①</th><th>結果・スコア</th><th style="width:105px">チーム②</th></tr></thead><tbody>${mhtml}</tbody></table>${doneM===3?`<div style="margin-top:12px;font-weight:900;font-size:11px;color:var(--green);margin-bottom:4px">📊 【確定】リーグ順位表</div><table class="rtbl"><thead><tr><th style="width:22px">位</th><th>チーム</th><th style="width:45px">勝敗</th><th style="width:38px">勝率</th><th style="width:45px">セット率</th><th style="width:45px">得点率</th></tr></thead><tbody>${rhtml}</tbody></table>`:`<div class="pending-msg">⏳ 進行中（全試合終了後に順位確定）</div>`}</div></div>`;
+    html+=`<div class="part-card" style="border-top:3px solid ${lg.color}"><div class="part-head" style="background:#34495e"><span>🔥 ${esc(lg.label)}</span></div><div class="part-body"><table class="mtbl"><thead><tr><th style="width:35px">順序</th><th style="width:124px">チーム①</th><th>結果・スコア</th><th style="width:124px">チーム②</th></tr></thead><tbody>${mhtml}</tbody></table>${doneM===3?`<div style="margin-top:12px;font-weight:900;font-size:11px;color:var(--green);margin-bottom:4px">📊 【確定】リーグ順位表</div><table class="rtbl"><thead><tr><th style="width:22px">位</th><th>チーム</th><th style="width:45px">勝敗</th><th style="width:38px">勝率</th><th style="width:45px">セット率</th><th style="width:45px">得点率</th></tr></thead><tbody>${rhtml}</tbody></table>`:`<div class="pending-msg">⏳ 進行中（全試合終了後に順位確定）</div>`}</div></div>`;
   });
   html+=`</div></div></div>`;
 
@@ -542,7 +584,7 @@ function renderDay2ThreeLeagues(sec){
         const label=isTop3?medalsTop[overallIdx]:`${esc(lg.label)}${ri+1}位`;
         const bg=isTop3?bgTop[overallIdx]:'#f3f4f6';
         const tx=isTop3?txTop[overallIdx]:'#374151';
-        html+=`<div class="podium-row"><span class="podium-rank-lbl" style="color:#666">${label}</span><span class="podium-name" style="background:${bg};color:${tx}">${esc(teams[ti])}</span></div>`;
+        html+=`<div class="podium-row"><span class="podium-rank-lbl" style="color:#666">${label}</span><span class="podium-name" style="background:${bg};color:${tx}">${teamCellByName(teams[ti])}</span></div>`;
       });
     });
     html+=`</div>`;
