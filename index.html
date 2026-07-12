@@ -146,7 +146,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:#1a202c;fo
 <div class="sec-pg on" id="sec-female">
   <div class="day-nav">
     <button class="dnbtn on" data-day="1" data-sec="female" onclick="switchDay('female',1)">📅 1日目 パート予選</button>
-    <button class="dnbtn" data-day="2" data-sec="female" onclick="switchDay('female',2)">🏆 2日目 順位別リーグ</button>
+    <button class="dnbtn" id="day2-btn" data-day="2" data-sec="female" onclick="switchDay('female',2)" style="display:none;pointer-events:none;opacity:0.5">🏆 2日目 順位別リーグ</button>
   </div>
   <div class="day-pg on" id="day-female-1"></div>
   <div class="day-pg" id="day-female-2"></div>
@@ -183,7 +183,7 @@ const TOURNAMENT={
 };
 
 const M3=[[0,1,'①vs②'],[1,2,'②vs③'],[2,0,'③vs①']];
-let DB={ scores:{}, teamNames:{}, t2scores:{}, t2teams:{}, groups:{} };
+let DB={ scores:{}, teamNames:{}, t2scores:{}, t2teams:{}, groups:{}, day1Done: false };
 
 function save(){try{localStorage.setItem(STORE,JSON.stringify(DB));}catch(e){}}
 function load(){
@@ -195,33 +195,61 @@ function load(){
 
 let firstCloudLoadDone=false;
 
+let cloudLoading=false; // 多重実行の防止（スマホで連打・自動更新が重なると固まる原因）
+
 async function cloudLoad(isAuto) {
   const statusEl = document.getElementById('cloud-status');
+  if(cloudLoading){ return; } // 既に読込中なら何もしない
+  cloudLoading = true;
   if(statusEl) statusEl.textContent = '⏳ 読込中...';
+
+  // スマホの回線が不安定なとき fetch が返ってこないことがあるため、15秒でタイムアウトさせる
+  const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  const timer = setTimeout(()=>{ if(ctrl) ctrl.abort(); }, 15000);
+
   try {
-    const res = await fetch(GAS_URL + '?mode=data');
+    // キャッシュ回避（スマホのブラウザは古いデータを返しがち）
+    const url = GAS_URL + '?mode=data&t=' + Date.now();
+    const opt = { cache:'no-store' };
+    if(ctrl) opt.signal = ctrl.signal;
+
+    const res = await fetch(url, opt);
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
+
+    let data = null;
+    try { data = await res.json(); }
+    catch(e){ throw new Error('データの形式が不正です'); }
+
     if (data && typeof data === 'object') {
-      DB = Object.assign({scores:{},teamNames:{},t2scores:{}}, data);
+      DB = Object.assign({scores:{},teamNames:{},t2scores:{},t2teams:{},groups:{},day1Done:false}, data);
       save();
       renderAll();
+      updateDay2TabVisibility();
 
       // 初回読込時のみ、本部が最後に開いていた日程に合わせる
-      // （自動更新のたびに閲覧者が見ているタブを勝手に切り替えない）
+      // （2日目が未公開のときは1日目のままにする）
       if(!firstCloudLoadDone && DB.lastView && DB.lastView.day) {
-        switchDay('female', DB.lastView.day);
+        const d = (DB.lastView.day === 2 && !DB.day1Done) ? 1 : DB.lastView.day;
+        switchDay('female', d);
       }
       firstCloudLoadDone=true;
 
       const timeStr = new Date().toLocaleTimeString('ja-JP');
       if(statusEl) statusEl.textContent = `更新済み ${timeStr} ✅`;
       if(!isAuto) showToast('最新データを読み込みました！'); // 手動更新時のみ通知
+    } else {
+      // データが空（本部がまだ一度もクラウド保存していない等）
+      if(statusEl) statusEl.textContent = '📭 データがまだありません';
+      if(!isAuto) showToast('公開されたデータがまだありません');
     }
   } catch (e) {
-    if(statusEl) statusEl.textContent = '❌ 読み込みエラー';
-    if(!isAuto) showToast('データ取得に失敗しました');
+    const aborted = (e && e.name === 'AbortError');
+    if(statusEl) statusEl.textContent = aborted ? '⏱ 通信タイムアウト' : '❌ 読み込みエラー';
+    if(!isAuto) showToast(aborted ? '通信がタイムアウトしました。電波状況を確認してください' : 'データ取得に失敗しました');
     console.error(e);
+  } finally {
+    clearTimeout(timer);
+    cloudLoading = false; // 必ず解除（ここが無いと「読込中」のまま固まる）
   }
 }
 
@@ -533,6 +561,25 @@ function renderAll(){
   }
   const d2el=document.getElementById(`day-female-2`);
   if(d2el){ d2el.innerHTML=renderDay2ThreeLeagues('female'); }
+  
+  // 2日目タブの表示制御
+  updateDay2TabVisibility();
+}
+
+function updateDay2TabVisibility(){
+  const btn2=document.getElementById('day2-btn');
+  if(!btn2)return;
+  if(DB&&DB.day1Done){
+    // 1日目終了済み → 2日目タブを表示
+    btn2.style.display='inline-block';
+    btn2.style.pointerEvents='auto';
+    btn2.style.opacity='1';
+  } else {
+    // 1日目未確定 → 2日目タブを非表示
+    btn2.style.display='none';
+    btn2.style.pointerEvents='none';
+    btn2.style.opacity='0.5';
+  }
 }
 
 const AUTO_REFRESH_MS = 60000; // 自動更新の間隔（60秒）
@@ -566,8 +613,8 @@ function toggleAutoRefresh(){
 }
 
 window.addEventListener('DOMContentLoaded',()=>{ 
-  load(); 
-  renderAll(); 
+  try{ load(); }catch(e){ console.error(e); }
+  try{ renderAll(); }catch(e){ console.error(e); }
   cloudLoad(); // 起動時に最新のクラウドデータを自動取得
 
   // 前回の自動更新ON/OFF設定を復元（初めての場合はON）
@@ -577,6 +624,16 @@ window.addEventListener('DOMContentLoaded',()=>{
   }catch(e){}
   updateAutoRefreshBtn();
   if(autoRefreshOn) startAutoRefresh();
+});
+
+// スマホは画面ロックやアプリ切替でタイマーが止まるため、画面に戻ったら再取得する
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState === 'visible'){
+    if(autoRefreshOn){
+      cloudLoad(true);
+      startAutoRefresh(); // 止まっているかもしれないタイマーを張り直す
+    }
+  }
 });
 </script>
 </body>
